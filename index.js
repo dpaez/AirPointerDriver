@@ -14,10 +14,10 @@ function AirPointerModalityDriver( width, height, pointerElem ){
   this.stageWidth = width || document.body.clientWidth;
   this.stageHeight = height || document.body.clientHeight;
 
-  if ('undefined' === typeof pointerElem){
+  if ( 'undefined' === typeof pointerElem ){
     pointerElem = document.createElement('div');
     pointerElem.style.display = 'block';
-    pointerElem.style.backgroundColor = '#0E58EF';
+    pointerElem.style.backgroundColor = '#040000';
     pointerElem.style.borderRadius = '10px';
     pointerElem.style.width = '20px';
     pointerElem.style.height = '20px';
@@ -101,8 +101,8 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
   };
 
   if ( (pointable.touchZone == "touching") && ((!this.lastState) || (this.lastState === 'dragend')) ) {
-    this.pointerElem.style.backgroundColor = '#131986';
-    this.pointerElem.style.opacity = (0.375 - pointable.touchDistance * 0.5);
+    this.pointerElem.style.backgroundColor = '#040000';
+    this.pointerElem.style.opacity = (0.375 - pointable.touchDistance * 0.2);
 
     evt = new CustomEvent('fingerdown', {
       'view'       : window,
@@ -117,7 +117,7 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
 
   }
 
-  if ( (pointable.touchZone == "touching") && (this.lastState === 'dragstart') ){
+  if ((this.lastState === 'dragstart') && (target.classList.contains('draggable'))){
     evt = new CustomEvent('fingermove', {
       'view'       : window,
       'bubbles'    : true,
@@ -132,36 +132,49 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
 
 
   if ( (this.currentState === 'dragmoving') ){
+    target.style.display = 'none';
     targetElement = document.elementFromPoint( pos[0] , pos[1]-27 );
-    if (targetElement.classList.contains('droppable')){
+    console.info('targetElement is: ', targetElement);
+    if ( (targetElement) && (targetElement.classList.contains('droppable')) ){
       evt = new CustomEvent('fingerenter', {
+        'view'       : document,
+        'bubbles'    : true,
+        'cancelable' : true,
+        'detail'     : d,
+        'pageX'      : d[0],
+        'pageY'      : d[1]-27,
+        'srcElement' : targetElement
+      });
+      targetElement.dispatchEvent( evt );
+      this.lastState = 'dragover';
+      // triggering fusion event
+      var data = {
+        gesture: 'fingerover',
+        dx: d[0],
+        dy: d[1]
+      };
+      this.fire( 'recognized', {'gesture':'fingerover'} );
+    }
+    target.style.display = '';
+  }
+
+  if ( this.lastState === 'dragover' ){
+    target.style.display = 'none';
+    var overTarget = document.elementFromPoint( pos[0] , pos[1]-27 );
+    if ( (overTarget) && (!overTarget.classList.contains('droppable')) ){
+      evt = new CustomEvent('fingerleave', {
         'view'       : window,
         'bubbles'    : true,
         'cancelable' : true,
         'detail'     : d,
         'pageX'      : d[0],
-        'pageY'      : d[1]
+        'pageY'      : d[1]-27,
+        'srcElement' : targetElement
       });
       targetElement.dispatchEvent( evt );
-      this.lastState = 'dragover';
-      // triggering fusion event
-      this.fire( 'recognized', {'gesture':'fingerover'} );
+      this.lastState = 'dragleave';
     }
-  }
-
-  if ( (this.lastState === 'dragover') && (!target.classList.contains('droppable')) ){
-    evt = new CustomEvent('fingerleave', {
-      'view'       : window,
-      'bubbles'    : true,
-      'cancelable' : true,
-      'detail'     : d,
-      'pageX'      : d[0],
-      'pageY'      : d[1]
-    });
-    targetElement.dispatchEvent( evt );
-    this.currentState = 'dragmoving';
-    this.lastState = 'dragleave';
-
+    target.style.display = '';
   }
 
   if ( pointable.touchZone != 'touching' ) {
