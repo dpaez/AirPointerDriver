@@ -29,6 +29,9 @@ function AirPointerModalityDriver( width, height, pointerElem ){
   this.id = 'AIRGESTURE';
   this.lastState = '';
   this.pointerElem = pointerElem;
+  this.setDraggables();
+  this.setDroppables();
+  this.getDropsPositions();
 }
 
 util.inherits( AirPointerModalityDriver, ModalityDriverChannel );
@@ -77,6 +80,43 @@ AirPointerModalityDriver.prototype.start = function( controllerOptions ){
 
 };
 
+AirPointerModalityDriver.prototype.setDraggables = function( draggables ) {
+  draggables = ( 'undefined' === typeof draggables )? '.draggable' : draggables;
+
+  if ('string' === typeof draggables){
+    draggables = document.querySelectorAll( draggables );
+  }
+  if ( 'object' !== typeof draggables ){
+    throw new Error( 'Please specify your droppables elements.' );
+  }
+
+  this.draggables = draggables;
+};
+
+AirPointerModalityDriver.prototype.setDroppables = function( droppables ) {
+  droppables = ( 'undefined' === typeof droppables )? '.droppable' : droppables;
+
+  if ('string' === typeof droppables){
+    droppables = document.querySelectorAll( droppables );
+  }
+  if ( 'object' !== typeof droppables ){
+    throw new Error( 'Please specify your droppables elements.' );
+  }
+
+  this.droppables = droppables;
+};
+
+AirPointerModalityDriver.prototype.getDropsPositions = function(){
+  var drop;
+  var rect;
+  for ( var i=0; i < this.droppables.length; i++ ){
+    drop = this.droppables[ i ];
+    rect = drop.getClientRects();
+    if ( !rect ){ break; }
+    drop.posData = rect[ 0 ];
+  }
+};
+
 AirPointerModalityDriver.prototype.leapToScene = function(frame) {
   var tip = frame.pointables[0].stabilizedTipPosition;
   var ibox = frame.interactionBox;
@@ -92,6 +132,26 @@ AirPointerModalityDriver.prototype.leapToScene = function(frame) {
   return [w * npos[0], h * (1 - npos[1])];
 };
 
+AirPointerModalityDriver.prototype.overDroppable = function( fingerPos ){
+  var targPos;
+  var dropItem = false;
+  console.log( 'fingerPos: ', fingerPos );
+  for ( var j=0; j < this.droppables.length; j++ ){
+    targPos = this.droppables[ j ].posData || false;
+    console.log( 'targPos: ', targPos );
+    if(
+      targPos                                         &&
+      (fingerPos.dx > targPos.left) &&
+      (fingerPos.dx < (targPos.left + targPos.width)) &&
+      (fingerPos.dy > targPos.top)                    &&
+      (fingerPos.dy < (targPos.top + targPos.height)) ){
+      dropItem = this.droppables[ j ];
+      break;
+    }
+  }
+  return dropItem;
+};
+
 AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target ){
   var evt;
   var targetElement;
@@ -100,7 +160,11 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
     'dy': pos[1]
   };
 
-  if ( (pointable.touchZone == "touching") && ((!this.lastState) || (this.lastState === 'dragend')) ) {
+  if (
+      (pointable.touchZone == "touching") &&
+      ((!this.lastState) || (this.lastState === 'dragend')) &&
+      (target.classList.contains('draggable'))
+    ) {
     this.pointerElem.style.backgroundColor = '#040000';
     this.pointerElem.style.opacity = (0.375 - pointable.touchDistance * 0.2);
 
@@ -114,10 +178,9 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
     });
     target.dispatchEvent( evt );
     this.lastState = 'dragstart';
-
   }
 
-  if ((this.lastState === 'dragstart') && (target.classList.contains('draggable'))){
+  if ( (this.lastState === 'dragstart') || (this.currentState === 'dragmoving') ) {
     evt = new CustomEvent('fingermove', {
       'view'       : window,
       'bubbles'    : true,
@@ -132,36 +195,51 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
 
 
   if ( (this.currentState === 'dragmoving') ){
+    /* old approach
     target.style.display = 'none';
     targetElement = document.elementFromPoint( pos[0] , pos[1]-27 );
     console.info('targetElement is: ', targetElement);
-    if ( (targetElement) && (targetElement.classList.contains('droppable')) ){
+    */
+
+    /* new approach */
+    targetElement = this.overDroppable( d );
+    console.info('targetElement is: ', targetElement);
+
+    //if ( (targetElement) && (targetElement.classList.contains('droppable')) ){
+    if ( targetElement ){
       evt = new CustomEvent('fingerenter', {
         'view'       : document,
         'bubbles'    : true,
         'cancelable' : true,
         'detail'     : d,
         'pageX'      : d[0],
-        'pageY'      : d[1]-27,
+        'pageY'      : d[1],
         'srcElement' : targetElement
       });
       targetElement.dispatchEvent( evt );
       this.lastState = 'dragover';
+      this.lastDragOverObj = targetElement;
       // triggering fusion event
       var data = {
         gesture: 'fingerover',
         dx: d[0],
         dy: d[1]
       };
-      this.fire( 'recognized', {'gesture':'fingerover'} );
+      // triggering fussion
+      this.fire( 'recognized', {'gesture':'fingerover', 'elementID': targetElement.id} );
     }
-    target.style.display = '';
+    //target.style.display = '';
   }
 
   if ( this.lastState === 'dragover' ){
-    target.style.display = 'none';
-    var overTarget = document.elementFromPoint( pos[0] , pos[1]-27 );
-    if ( (overTarget) && (!overTarget.classList.contains('droppable')) ){
+    // old approach
+    //target.style.display = 'none';
+    //var overTarget = document.elementFromPoint( pos[0] , pos[1]-27 );
+
+    // new approach
+    var overTarget = this.overDroppable( d );
+    //if ( (overTarget) && (!overTarget.classList.contains('droppable')) ){
+    if ( !overTarget ){
       evt = new CustomEvent('fingerleave', {
         'view'       : window,
         'bubbles'    : true,
@@ -169,12 +247,13 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
         'detail'     : d,
         'pageX'      : d[0],
         'pageY'      : d[1]-27,
-        'srcElement' : targetElement
+        'srcElement' : this.lastDragOverObj
       });
-      targetElement.dispatchEvent( evt );
+      this.lastDragOverObj.dispatchEvent( evt );
       this.lastState = 'dragleave';
+      this.lastDragOverObj = undefined;
     }
-    target.style.display = '';
+    //target.style.display = 'block';
   }
 
   if ( pointable.touchZone != 'touching' ) {
