@@ -1,7 +1,7 @@
 var util = require( 'util' );
 var $ = require('jquery');
 var Leap = require( 'leapjs' );
-var ModalityDriverChannel = require( '../gyes/build/gyes' ).ModalityDriver;
+var ModalityDriverChannel = require( 'gyes' ).ModalityDriver;
 
 /**
  * Module exports
