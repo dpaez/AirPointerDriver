@@ -157,7 +157,8 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
   var targetElement;
   var d = {
     'dx': pos[0],
-    'dy': pos[1]
+    'dy': pos[1],
+    'src': target
   };
 
   if (
@@ -174,7 +175,9 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
       'cancelable' : true,
       'detail'     : d,
       'pageX'      : d[0],
-      'pageY'      : d[1]
+      'pageY'      : d[1],
+      'src'        : target,
+      'srcElement' : target // new
     });
     target.dispatchEvent( evt );
     this.lastState = 'dragstart';
@@ -187,7 +190,9 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
       'cancelable' : true,
       'detail'     : d,
       'pageX'      : d[0],
-      'pageY'      : d[1]
+      'pageY'      : d[1],
+      'src'        : target,
+      'srcElement' : target // new
     });
     target.dispatchEvent( evt );
     this.currentState = 'dragmoving';
@@ -214,7 +219,9 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
         'detail'     : d,
         'pageX'      : d[0],
         'pageY'      : d[1],
-        'srcElement' : targetElement
+        'src'        : target,
+        'srcElement' : target
+        //'srcElement' : targetElement
       });
       targetElement.dispatchEvent( evt );
       this.lastState = 'dragover';
@@ -247,7 +254,9 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
         'detail'     : d,
         'pageX'      : d[0],
         'pageY'      : d[1]-27,
-        'srcElement' : this.lastDragOverObj
+        'src'        : target,
+        'srcElement' : target
+        //'srcElement' : this.lastDragOverObj
       });
       this.lastDragOverObj.dispatchEvent( evt );
       this.lastState = 'dragleave';
@@ -265,7 +274,8 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
       'cancelable' : true,
       'detail'     : d,
       'pageX'      : d[0],
-      'pageY'      : d[1]
+      'pageY'      : d[1],
+      'srcElement' : target
     });
     target.dispatchEvent( evt );
     this.lastState = 'dragend';
