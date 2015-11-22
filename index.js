@@ -1,5 +1,4 @@
 var util = require( 'util' );
-var $ = require('jquery');
 var Leap = require( 'leapjs' );
 var ModalityDriverChannel = require( 'gyes' ).ModalityDriver;
 
@@ -17,7 +16,7 @@ function AirPointerModalityDriver( width, height, pointerElem ){
   if ( 'undefined' === typeof pointerElem ){
     pointerElem = document.createElement('div');
     pointerElem.style.display = 'block';
-    pointerElem.style.backgroundColor = '#040000';
+    pointerElem.style.backgroundColor = '#FFFF11';
     pointerElem.style.borderRadius = '10px';
     pointerElem.style.width = '20px';
     pointerElem.style.height = '20px';
@@ -166,7 +165,7 @@ AirPointerModalityDriver.prototype.nextEvent = function( pos, pointable, target 
       ((!this.lastState) || (this.lastState === 'dragend')) &&
       (target.classList.contains('draggable'))
     ) {
-    this.pointerElem.style.backgroundColor = '#040000';
+    this.pointerElem.style.backgroundColor = '#FFFF11';
     this.pointerElem.style.opacity = (0.375 - pointable.touchDistance * 0.2);
 
     evt = new CustomEvent('fingerdown', {
