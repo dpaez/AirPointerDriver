@@ -1,6 +1,6 @@
 {
   "name": "AirPointerDriver",
-  "version": "0.0.0",
+  "version": "1.0.1",
   "description": "A gyes modality driver for air gestures, using Leap Motion controller.",
   "main": "index.js",
   "scripts": {
@@ -16,7 +16,6 @@
   "license": "MIT",
   "dependencies": {
     "leapjs": "^0.6.0",
-    "jquery": "^2.1.1",
     "gyes": "git+https://git@github.com/dpaez/gyes.git"
   },
   "devDependencies": {
