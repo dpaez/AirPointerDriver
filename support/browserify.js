@@ -25,7 +25,7 @@ function build( fn ){
   var bundle = {};
   bundle.standalone = 'AirPointerModalityDriver';
   bundle.insertGlobalVars = { global: glob };
-  bundle.debug = true;
+  bundle.debug = false;
   var b = browserify( opts );
   b.bundle( bundle, fn );
 
